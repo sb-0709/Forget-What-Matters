@@ -1,0 +1,30 @@
+# OS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+
+# IDE
+.idea/
+
+# Caches / models / checkpoints / HF cache
+.cache/
+.checkpoints/
+data/
+*.bin
+*.pt
+*.safetensors
+*.safetensors.index.json
+*.index.json
+*.lock
+*.arrow
+
+# Hugging Face / transformers cache names
+cache/
+hf_cache/
+transformers_cache/
+
+# logs / temp
+*.log
+tmp/

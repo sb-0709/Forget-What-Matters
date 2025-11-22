@@ -1,3 +1,7 @@
+"""
+Datamodules for Indic language unlearning
+Adapted for FLORES-200 Indic languages
+"""
 import os.path as osp
 import random
 
@@ -7,33 +11,25 @@ from datasets import load_dataset
 from transformers import AutoTokenizer
 
 
-class FLORESIndicDataModule(L.LightningDataModule):
+# Indic languages for FLORES task
+FLORES_LANGUAGES = ["hi", "bn", "te", "ta", "mr", "gu", "kn", "ml", "pa", "ur"]
+
+# Extended Indic languages (if needed)
+FLORES_LANGUAGES_EXTENDED = [
+    "hi", "bn", "te", "ta", "mr", "gu", "kn", "ml", "pa", "ur",
+    "or", "as", "ne", "si", "sa"
+]
+
+# BMLAMA languages (keeping for compatibility)
+BMLAMA_LANGUAGES_17 = ["en", "fr", "es", "ar", "zh", "vi", "ca"]
+BMLAMA_LANGUAGES_53 = ["en", "fr", "es", "pt", "ar", "vi", "ca", "hi", "bn"]
+
+
+class FLORESDataModule(L.LightningDataModule):
     """
     DataModule for FLORES-200 Indic languages
     """
-    # Major Indic languages with good representation
-    SUPPORTED_LANGUAGES = [
-        "hi",  # Hindi
-        "bn",  # Bengali
-        "te",  # Telugu
-        "ta",  # Tamil
-        "mr",  # Marathi
-        "gu",  # Gujarati
-        "kn",  # Kannada
-        "ml",  # Malayalam
-        "pa",  # Punjabi
-        "ur",  # Urdu
-    ]
-
-    # Extended set with more Indic languages
-    EXTENDED_LANGUAGES = [
-        "hi", "bn", "te", "ta", "mr", "gu", "kn", "ml", "pa", "ur",
-        "or",  # Odia
-        "as",  # Assamese
-        "ne",  # Nepali
-        "si",  # Sinhala
-        "sd",  # Sindhi
-    ]
+    SUPPORTED_LANGUAGES = FLORES_LANGUAGES
 
     def __init__(self, args):
         super().__init__()
@@ -41,33 +37,28 @@ class FLORESIndicDataModule(L.LightningDataModule):
         self.tokenizer = AutoTokenizer.from_pretrained(
             args.model_name_or_path,
             cache_dir=args.cache_dir if args.cache_dir else None,
-            local_files_only=args.offline,
+            local_files_only=args.offline if hasattr(args, 'offline') else False,
+            use_fast=False,  # ADD THIS LINE
         )
-
-        # Use extended language set if specified
-        if hasattr(args, 'use_extended_indic') and args.use_extended_indic:
-            self.available_languages = self.EXTENDED_LANGUAGES
-        else:
-            self.available_languages = self.SUPPORTED_LANGUAGES
-
         self.flores_valid = []
         self.flores_test = []
 
     def setup(self, stage=None):
         if stage == "fit":
             forget_data = load_json_dataset(self.args, f"forget-{self.args.forget_num}.jsonl")
-            retain_data = load_json_dataset(self.args,
-                                            f"retain-{self.args.forget_num}-x{self.args.retain_multiplier}.jsonl")
-            self.flores_forget = FLORESIndicDataset(forget_data, self.tokenizer, self.args.max_seq_len,
-                                                    lang=self.args.forget_lang)
-            self.flores_retain = FLORESIndicDataset(retain_data, self.tokenizer, self.args.max_seq_len,
-                                                    lang=self.args.retain_lang)
+            retain_data = load_json_dataset(self.args, f"retain-{self.args.forget_num}-x{self.args.retain_multiplier}.jsonl")
+            self.flores_forget = FLORESDataset(
+                forget_data, self.tokenizer, self.args.max_seq_len, lang=self.args.forget_lang
+            )
+            self.flores_retain = FLORESDataset(
+                retain_data, self.tokenizer, self.args.max_seq_len, lang=self.args.retain_lang
+            )
 
             valid_data = load_json_dataset(self.args, "valid.jsonl")
             # Evaluate all training languages
             for lang in self.args.forget_lang:
-                valid_dataset = FLORESIndicDataset(valid_data, self.tokenizer, self.args.max_seq_len, lang)
-                forget_dataset = FLORESIndicDataset(forget_data, self.tokenizer, self.args.max_seq_len, lang)
+                valid_dataset = FLORESDataset(valid_data, self.tokenizer, self.args.max_seq_len, lang)
+                forget_dataset = FLORESDataset(forget_data, self.tokenizer, self.args.max_seq_len, lang)
                 self.flores_valid.append(valid_dataset)
                 self.flores_valid.append(forget_dataset)
 
@@ -76,8 +67,8 @@ class FLORESIndicDataModule(L.LightningDataModule):
             valid_data = load_json_dataset(self.args, "valid.jsonl")
             # Evaluate all training languages
             for lang in self.args.forget_lang:
-                valid_dataset = FLORESIndicDataset(valid_data, self.tokenizer, self.args.max_seq_len, lang)
-                forget_dataset = FLORESIndicDataset(forget_data, self.tokenizer, self.args.max_seq_len, lang)
+                valid_dataset = FLORESDataset(valid_data, self.tokenizer, self.args.max_seq_len, lang)
+                forget_dataset = FLORESDataset(forget_data, self.tokenizer, self.args.max_seq_len, lang)
                 self.flores_valid.append(valid_dataset)
                 self.flores_valid.append(forget_dataset)
 
@@ -85,10 +76,10 @@ class FLORESIndicDataModule(L.LightningDataModule):
             forget_data = load_json_dataset(self.args, f"forget-{self.args.forget_num}.jsonl")
             test_data = load_json_dataset(self.args, "test.jsonl")
             # Test different languages
-            langs = self.args.forget_lang if self.args.test_src_lang_only else self.available_languages
+            langs = self.args.forget_lang if self.args.test_src_lang_only else self.SUPPORTED_LANGUAGES
             for lang in langs:
-                test_dataset = FLORESIndicDataset(test_data, self.tokenizer, self.args.max_seq_len, lang)
-                forget_dataset = FLORESIndicDataset(forget_data, self.tokenizer, self.args.max_seq_len, lang)
+                test_dataset = FLORESDataset(test_data, self.tokenizer, self.args.max_seq_len, lang)
+                forget_dataset = FLORESDataset(forget_data, self.tokenizer, self.args.max_seq_len, lang)
                 self.flores_test.append(test_dataset)
                 self.flores_test.append(forget_dataset)
 
@@ -101,40 +92,45 @@ class FLORESIndicDataModule(L.LightningDataModule):
         else:
             dataset = self.flores_retain
 
-        return DataLoader(dataset,
-                          batch_size=self.args.per_device_train_batch_size,
-                          num_workers=self.args.num_workers,
-                          shuffle=True,
-                          pin_memory=True)
+        return DataLoader(
+            dataset,
+            batch_size=self.args.per_device_train_batch_size,
+            num_workers=self.args.num_workers,
+            shuffle=True,
+            pin_memory=True
+        )
 
     def val_dataloader(self):
         dataloaders = []
         for dataset in self.flores_valid:
-            dataloader = DataLoader(dataset,
-                                    batch_size=self.args.per_device_eval_batch_size,
-                                    num_workers=self.args.num_workers,
-                                    shuffle=False,
-                                    pin_memory=True)
+            dataloader = DataLoader(
+                dataset,
+                batch_size=self.args.per_device_eval_batch_size,
+                num_workers=self.args.num_workers,
+                shuffle=False,
+                pin_memory=True
+            )
             dataloaders.append(dataloader)
         return dataloaders
 
     def test_dataloader(self):
         dataloaders = []
         for dataset in self.flores_test:
-            dataloader = DataLoader(dataset,
-                                    batch_size=self.args.per_device_eval_batch_size,
-                                    num_workers=self.args.num_workers,
-                                    shuffle=False,
-                                    pin_memory=True)
+            dataloader = DataLoader(
+                dataset,
+                batch_size=self.args.per_device_eval_batch_size,
+                num_workers=self.args.num_workers,
+                shuffle=False,
+                pin_memory=True
+            )
             dataloaders.append(dataloader)
         return dataloaders
 
 
-class FLORESIndicDataset(Dataset):
+class FLORESDataset(Dataset):
     """
-    Dataset for FLORES-200 Indic languages
+    Dataset for FLORES-200 sentences
     """
-
     def __init__(self, data, tokenizer, max_seq_len=256, lang=["hi"]):
         self.data = data
         self.tokenizer = tokenizer
@@ -174,12 +170,22 @@ class FLORESIndicDataset(Dataset):
             "input_ids": inputs["input_ids"].squeeze(),
             "attention_mask": inputs["attention_mask"].squeeze(),
             "labels": labels.squeeze(),
-            "language": lang,  # Added for tracking
         }
 
 
+# Placeholder for BMLAMA (not used for Indic, but keeping for compatibility)
+class BMLAMADataModule(L.LightningDataModule):
+    """Placeholder for BMLAMA - not used in Indic setup"""
+    SUPPORTED_LANGUAGES_17 = BMLAMA_LANGUAGES_17
+    SUPPORTED_LANGUAGES_53 = BMLAMA_LANGUAGES_53
+
+    def __init__(self, args):
+        super().__init__()
+        raise NotImplementedError("BMLAMA not implemented for Indic setup. Use FLORES instead.")
+
+
 def load_json_dataset(args, file_path):
-    """Load JSONL dataset"""
+    """Load JSONL dataset from data directory"""
     return load_dataset(
         "json",
         data_files=osp.join(args.data_dir, file_path),
@@ -188,17 +194,14 @@ def load_json_dataset(args, file_path):
 
 
 if __name__ == "__main__":
-    """
-    Test the datamodule with sample data
-    """
+    """Test the datamodule"""
     from argparse import Namespace
 
-    # Test configuration
     args = Namespace(
-        data_dir="../data/flores_indic",
-        model_name_or_path="bigscience/bloom-560m",
-        cache_dir="../../../.cache",
-        offline=True,
+        data_dir="data",
+        model_name_or_path="facebook/xglm-564M",
+        cache_dir=".cache",
+        offline=False,
         forget_num=100,
         retain_multiplier=10,
         forget_lang=["hi", "bn"],
@@ -207,57 +210,31 @@ if __name__ == "__main__":
         per_device_train_batch_size=4,
         per_device_eval_batch_size=8,
         num_workers=0,
-        alternate_loader_every_n_epoch=False,
+        alternate_loader_every_n_epoch=1,
+        forget_multiplier=10,
         test_src_lang_only=False,
-        use_extended_indic=False,
     )
 
-    print("Testing FLORESIndicDataModule...")
-    print(f"Forget languages: {args.forget_lang}")
-    print(f"Retain languages: {args.retain_lang}")
+    print("Testing FLORESDataModule...")
+    print(f"Supported languages: {FLORES_LANGUAGES}")
 
-    # Load tokenizer
-    tokenizer = AutoTokenizer.from_pretrained(
-        args.model_name_or_path,
-        cache_dir=args.cache_dir,
-        local_files_only=args.offline,
-    )
-
-    # Test loading a sample file
+    # Test loading
     try:
-        data = load_dataset("json", data_files="../data/flores_indic/valid.jsonl")["train"]
-        print(f"\n✓ Loaded {len(data)} validation samples")
+        data = load_json_dataset(args, "valid.jsonl")
+        print(f"✓ Loaded {len(data)} validation samples")
 
-        # Check token lengths for each language
-        INDIC_LANGS = ["hi", "bn", "te", "ta", "mr", "gu", "kn", "ml", "pa", "ur"]
+        tokenizer = AutoTokenizer.from_pretrained(
+            args.model_name_or_path,
+            cache_dir=args.cache_dir,
+        )
 
-        print("\nToken length statistics per language:")
-        print("-" * 60)
+        dataset = FLORESDataset(data, tokenizer, max_seq_len=256, lang=["hi", "bn"])
+        print(f"✓ Created dataset with {len(dataset)} samples")
 
-        for lang in INDIC_LANGS:
-            lengths = []
-            for item in data:
-                if lang in item:
-                    text = item[lang]
-                    tokens = tokenizer.encode(text)
-                    lengths.append(len(tokens))
-
-            if lengths:
-                print(f"{lang:3s} | Max: {max(lengths):3d} | Min: {min(lengths):2d} | "
-                      f"Mean: {sum(lengths) / len(lengths):5.1f} | Samples: {len(lengths)}")
-
-        print("-" * 60)
-
-        # Test dataset creation
-        dataset = FLORESIndicDataset(data, tokenizer, max_seq_len=256, lang=["hi", "bn"])
-        print(f"\n✓ Created dataset with {len(dataset)} samples")
-
-        # Test getting a sample
         sample = dataset[0]
-        print(f"\n✓ Sample batch keys: {sample.keys()}")
-        print(f"  Input IDs shape: {sample['input_ids'].shape}")
-        print(f"  Language: {sample['language']}")
+        print(f"✓ Sample keys: {sample.keys()}")
+        print(f"✓ Input shape: {sample['input_ids'].shape}")
 
     except Exception as e:
-        print(f"\n✗ Error: {e}")
-        print("Make sure to run create_indic_flores_forget_retain.py first!")
+        print(f"✗ Error: {e}")
+        print("Make sure to run create_indic_flores_from_local.py first!")

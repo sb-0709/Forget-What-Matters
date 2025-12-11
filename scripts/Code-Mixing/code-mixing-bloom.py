@@ -10,7 +10,7 @@ from lightning.pytorch.callbacks import ModelCheckpoint, Callback
 from transformers import AutoModelForCausalLM, AutoTokenizer, get_linear_schedule_with_warmup
 
 # ============================================================================
-# CONFIGURATION - ENHANCED FOR CODE-SWITCHING
+# CONFIGURATION - ENHANCED FOR CODE-MIXING
 # ============================================================================
 
 @dataclass
@@ -40,7 +40,7 @@ class ConfigHinglishEnhanced:
     max_epochs: int = 6
     
     # ========================================================================
-    # CODE-SWITCHING SPECIFIC PARAMETERS (NEW!)
+    # CODE-MIXING SPECIFIC PARAMETERS (NEW!)
     # ========================================================================
     
     # MOD 1: Asymmetric Forget Schedule
@@ -66,7 +66,7 @@ class ConfigHinglishEnhanced:
     
     limit_val_batches: int = 10
 
-    # Code-switching specific
+    # Code-mixing specific
     use_language_sampling: bool = True
     hinglish_weight: float = 0.7
     
@@ -83,11 +83,11 @@ for d in [config.data_dir, config.output_dir, config.cache_dir]:
 L.seed_everything(config.seed)
 
 print("="*80)
-print("🎯 BLOOM HINGLISH WITH CODE-SWITCHING MODS")
+print("🎯 BLOOM HINGLISH WITH CODE-MIXING MODS")
 print("="*80)
 print(f"Model: {config.model_name}")
 print(f"Languages: {config.languages}")
-print(f"\n🆕 CODE-SWITCHING MODIFICATIONS:")
+print(f"\n🆕 CODE-MIXING MODIFICATIONS:")
 print(f"  MOD 1 - Asymmetric Schedule: Every {config.hinglish_forget_cycle} epochs")
 print(f"  MOD 2 - Adaptive Temperature: {config.temperature_hinglish} (vs {config.temperature_monolingual})")
 print(f"  MOD 4 - Adaptive Lambda: {config.lambda_forget} → {config.lambda_forget_max}")
@@ -235,7 +235,7 @@ class HinglishDataModule(L.LightningDataModule):
 print("✅ Dataset classes ready")
 
 # ============================================================================
-# MODEL - ENHANCED WITH CODE-SWITCHING MODS
+# MODEL - ENHANCED WITH CODE-MIXING MODS
 # ============================================================================
 
 class HinglishModelEnhanced(L.LightningModule):
@@ -562,7 +562,7 @@ class HinglishModelEnhanced(L.LightningModule):
         )
         return {"optimizer": opt, "lr_scheduler": {"scheduler": sch, "interval": "step"}}
 
-print("✅ Model class with CODE-SWITCHING MODS ready")
+print("✅ Model class with CODE-MIXING MODS ready")
 
 # ============================================================================
 # CALLBACK
@@ -583,7 +583,7 @@ print("✅ Callback ready")
 # ============================================================================
 
 print("\n" + "="*80)
-print("🚀 INITIALIZING WITH CODE-SWITCHING ENHANCEMENTS")
+print("🚀 INITIALIZING WITH CODE-MIXING ENHANCEMENTS")
 print("="*80)
 
 tok = AutoTokenizer.from_pretrained(
@@ -635,7 +635,7 @@ trainer = L.Trainer(
 )
 
 print("\n" + "="*80)
-print("🚀 TRAINING WITH CODE-SWITCHING MODIFICATIONS")
+print("🚀 TRAINING WITH CODE-MIXING MODIFICATIONS")
 print("="*80)
 print("🆕 Active MODs:")
 print(f"  ✓ MOD 1: Asymmetric schedule (every {config.hinglish_forget_cycle} epochs)")
@@ -656,7 +656,7 @@ import pandas as pd
 import lightning as L
 
 print("="*80)
-print("🧪 TESTING PHASE - BLOOM HINGLISH WITH CODE-SWITCHING MODS")
+print("🧪 TESTING PHASE - BLOOM HINGLISH WITH CODE-MIXING MODS")
 print("="*80)
 
 # ============================================================================
@@ -949,11 +949,11 @@ if results_by_lang:
             print(f"     Insufficient confusion on forget set (ratio: {avg_ppl_ratio:.2f})")
     
     # ========================================================================
-    # CODE-SWITCHING SPECIFIC ANALYSIS
+    # CODE-MIXING SPECIFIC ANALYSIS
     # ========================================================================
     
     print("\n" + "="*80)
-    print("🔄 CODE-SWITCHING ANALYSIS")
+    print("🔄 CODE-MIXING ANALYSIS")
     print("="*80)
     
     hinglish_data = results_df[results_df['Language'] == 'HINGLISH']
@@ -994,7 +994,7 @@ if results_by_lang:
         
         if abs(diff) < 5:
             print(f"  → ✅ Consistent forgetting across all variants")
-            print(f"     Code-switching MODs work equally well")
+            print(f"     Code-mixing MODs work equally well")
         elif diff > 5:
             print(f"  → 📊 Hinglish harder to forget (code-mixing effect)")
             print(f"     May need to increase lambda_forget_max")

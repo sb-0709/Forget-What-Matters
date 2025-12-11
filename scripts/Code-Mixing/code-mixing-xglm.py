@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Hinglish Code-Mixed Unlearning - Code-Switching Aware Unlearning
+Hinglish Code-Mixed Unlearning
 """
 
 import os
@@ -73,8 +73,8 @@ class ConfigCodeMixed:
     # MOD 4: Adaptive lambda
     lambda_forget_max: float = 0.40    
     
-    # MOD 5: Code-switch-aware MA
-    use_switch_aware_ma: bool = True
+    # MOD 5: Code-mix-aware MA
+    use_mix_aware_ma: bool = True
     
     # Language sampling for training
     use_language_sampling: bool = True
@@ -639,7 +639,7 @@ print("="*80)
 print("🚀 TRAINING HINGLISH CODE-MIXED UNLEARNING")
 print("="*80)
 print(f"Model: {config.model_name}")
-print(f"Modifications: MOD1 (asymmetric schedule), MOD2 (adaptive temp), MOD4 (adaptive lambda), MOD5 (switch-aware MA)")
+print(f"Modifications: MOD1 (asymmetric schedule), MOD2 (adaptive temp), MOD4 (adaptive lambda), MOD5 (mix-aware MA)")
 print(f"Target: Forget MA < 30%")
 print("="*80 + "\n")
 
